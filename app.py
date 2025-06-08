@@ -1,7 +1,18 @@
 from flask import Flask, request, jsonify
 import json
+from parser import graph
 
 app = Flask(__name__)
+
+
+def generate_system_message(sender):
+    system_message = f"""
+    You are an email-based crypto wallet assistant.
+
+    Your role is to interpret and fulfill user requests using the tools available to you.
+    Take the sender email as: {sender}
+    """
+    return system_message
 
 
 @app.route('/postmark-webhook', methods=['POST'])
@@ -10,34 +21,19 @@ def postmark_webhook():
     Endpoint to receive Postmark webhooks and print the request body
     """
     try:
-        # Get the raw request data
-        raw_data = request.get_data(as_text=True)
+        received_email = request.get_json()
+        from_account = received_email['From']
+        subject = received_email['Subject']
+        text = received_email['TextBody']
+        user_message = f"Sender: {from_account}\nSubject: {subject}\n{text}"
 
-        # Print the raw body
-        print("=== Postmark Webhook Received ===")
-        print("Raw body:")
-        print(raw_data)
-        print("=" * 35)
-
-        # Try to parse as JSON for prettier output
-        try:
-            json_data = request.get_json()
-            if json_data:
-                print("Parsed JSON:")
-                print(json.dumps(json_data, indent=2))
-                print("=" * 35)
-        except Exception as e:
-            print(f"Could not parse as JSON: {e}")
-
-        # Print headers for debugging
-        print("Headers:")
-        for header, value in request.headers:
-            print(f"{header}: {value}")
-        print("=" * 35)
-
-        # Return a success response
+        inputs = {"messages": [
+            ("system", generate_system_message(from_account)),
+            ("user", user_message),
+        ]}
+        result = graph.invoke(inputs)
+        print(result)
         return jsonify({"status": "success", "message": "Webhook received"}), 200
-
     except Exception as e:
         print(f"Error processing webhook: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
