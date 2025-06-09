@@ -210,7 +210,7 @@ def create_wallet_account(fromEmail: str) -> Optional[Dict[str, Any]]:
 
         account_data = response.json()
         public_key = account_data["publicKey"]
-        send_confirmation_email(fromEmail, public_key)
+        send_creation_confirmation(fromEmail, public_key)
         return {"status": "Success", "details": "Mailsent successfully"}
 
     except Exception as e:
