@@ -20,23 +20,8 @@ def postmark_webhook():
     """
     Endpoint to receive Postmark webhooks and print the request body
     """
-    try:
-        received_email = request.get_json()
-        from_account = received_email['From']
-        subject = received_email['Subject']
-        text = received_email['TextBody']
-        user_message = f"Sender: {from_account}\nSubject: {subject}\n{text}"
-
-        inputs = {"messages": [
-            ("system", generate_system_message(from_account)),
-            ("user", user_message),
-        ]}
-        result = graph.invoke(inputs)
-        print(result)
-        return jsonify({"status": "success", "message": "Webhook received"}), 200
-    except Exception as e:
-        print(f"Error processing webhook: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+    received_email = request.get_json()
+    print(received_email)
 
 
 @app.route('/health', methods=['GET'])
