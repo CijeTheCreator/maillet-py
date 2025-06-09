@@ -20,6 +20,7 @@ def postmark_webhook():
     """
     Endpoint to receive Postmark webhooks and print the request body
     """
+    print("Requeest received")
     received_email = request.get_json()
     print("Raw JSON payload:", received_email)  # Add this
     print("Hello world")
