@@ -83,6 +83,8 @@ def send_wallet_transaction(fromEmail: str, toEmailOrAddress: str, amount: float
         transaction_id = transaction_details['transactionHash']
         send_confirmation_email(fromEmail, fromEmail,
                                 toEmailOrAddress, amount, transaction_id)
+
+        return {"status": "Success", "details": "Mailsent successfully"}
     except Exception as e:
         print(str(e))
         send_failure_email(fromEmail, fromEmail,
@@ -128,6 +130,7 @@ def get_wallet_balance(fromEmail: str) -> Optional[Dict[str, Any]]:
         balance_details = response.json()
         amount = balance_details["balance"]
         send_balance_email(fromEmail, fromEmail, amount)
+        return {"status": "Success", "details": "Mailsent successfully"}
 
     except Exception as e:
         print(str(e))
@@ -169,6 +172,8 @@ def get_wallet_history(fromEmail: str) -> Optional[Dict[str, Any]]:
             transaction_data)
         send_transaction_history_email(fromEmail, processed_transaction_data)
 
+        return {"status": "Success", "details": "Mailsent successfully"}
+
     except Exception as e:
         print(str(e))
         return None
@@ -206,6 +211,7 @@ def create_wallet_account(fromEmail: str) -> Optional[Dict[str, Any]]:
         account_data = response.json()
         public_key = account_data["publicKey"]
         send_confirmation_email(fromEmail, public_key)
+        return {"status": "Success", "details": "Mailsent successfully"}
 
     except Exception as e:
         print(str(e))
