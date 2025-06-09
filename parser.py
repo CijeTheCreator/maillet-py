@@ -11,7 +11,8 @@ from typing import Annotated, Sequence, TypedDict
 from langchain_core.messages import BaseMessage
 import os
 from dotenv import load_dotenv
-from returnMails import send_balance_email, send_confirmation_email, send_failure_email
+from returnMails import send_balance_email, send_confirmation_email, send_failure_email, send_transaction_history_email, send_creation_confirmation
+from transactionHelpers import process_transaction_data
 
 
 load_dotenv()
@@ -78,7 +79,6 @@ def send_wallet_transaction(fromEmail: str, toEmailOrAddress: str, amount: float
         response.raise_for_status()
 
         # Return the JSON response
-        # TODO: Include Transaction Id
         transaction_details = response.json()
         transaction_id = transaction_details['transactionHash']
         send_confirmation_email(fromEmail, fromEmail,
@@ -134,7 +134,86 @@ def get_wallet_balance(fromEmail: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-tools = [get_wallet_balance, send_wallet_transaction]
+@tool("get_wallet_history", args_schema=BalanceCheckInput, return_direct=True)
+def get_wallet_history(fromEmail: str) -> Optional[Dict[str, Any]]:
+    """
+    Fetch wallet history for a given email address from the wallet API.
+
+    Args:
+        fromEmail (str): The sender's email address
+
+    Returns:
+        Optional[Dict[str, Any]]: API response containing history, or None if error occurs
+    """
+    try:
+        # Get API URL from environment
+        api_url = os.getenv('WALLET_API_URL')
+        if not api_url:
+            raise ValueError("WALLET_API_URL environment variable not set")
+
+        # Construct the full endpoint URL
+        endpoint = f"{api_url}/api/wallet/transactions"
+
+        # Prepare request payload
+        payload = {
+            "email": fromEmail,
+            "limit": 10
+        }
+
+        # Make POST request
+        response = requests.post(endpoint, json=payload)
+        response.raise_for_status()
+
+        transaction_data = response.json()
+        processed_transaction_data = process_transaction_data(
+            transaction_data)
+        send_transaction_history_email(fromEmail, processed_transaction_data)
+
+    except Exception as e:
+        print(str(e))
+        return None
+
+
+@tool("create_wallet_account", args_schema=BalanceCheckInput, return_direct=True)
+def create_wallet_account(fromEmail: str) -> Optional[Dict[str, Any]]:
+    """
+    Creates an account with the specified email
+
+    Args:
+        fromEmail (str): The sender's email address
+
+    Returns:
+        Optional[Dict[str, Any]]: Account opening details
+    """
+    try:
+        # Get API URL from environment
+        api_url = os.getenv('WALLET_API_URL')
+        if not api_url:
+            raise ValueError("WALLET_API_URL environment variable not set")
+
+        # Construct the full endpoint URL
+        endpoint = f"{api_url}/api/account/create"
+
+        # Prepare request payload
+        payload = {
+            "email": fromEmail,
+        }
+
+        # Make POST request
+        response = requests.post(endpoint, json=payload)
+        response.raise_for_status()
+
+        account_data = response.json()
+        public_key = account_data["publicKey"]
+        send_confirmation_email(fromEmail, public_key)
+
+    except Exception as e:
+        print(str(e))
+        return None
+
+
+tools = [get_wallet_balance, send_wallet_transaction,
+         get_wallet_history, create_wallet_account]
 
 
 llm = ChatGoogleGenerativeAI(

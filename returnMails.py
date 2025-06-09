@@ -11,6 +11,47 @@ load_dotenv()
 ethtousd = os.environ["ETH_RATE"]
 
 
+def send_creation_confirmation(recipient_email: str, public_key):
+    message_data = {
+        "email": recipient_email,
+        "publicKey": public_key
+    }
+    message = Mail(
+        from_email=From("transactions@maillet.tech",
+                        name="Maillet"),
+        to_emails=To(recipient_email),
+    )
+
+    message.template_id = "d-1825294cd31248e2810419f8983a819b"
+    message.dynamic_template_data = message_data
+
+    try:
+        sg = SendGridAPIClient(os.environ["SENDGRID_API_KEY"])
+        response = sg.send(message)
+        print(f"Email sent! Status code: {response.status_code}")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
+
+def send_transaction_history_email(recipient_email: str, transaction_history):
+    message_data = transaction_history
+    message = Mail(
+        from_email=From("transactions@maillet.tech",
+                        name="Maillet"),
+        to_emails=To(recipient_email),
+    )
+
+    message.template_id = "d-712588d419c54047bbae11246be5b625"
+    message.dynamic_template_data = message_data
+
+    try:
+        sg = SendGridAPIClient(os.environ["SENDGRID_API_KEY"])
+        response = sg.send(message)
+        print(f"Email sent! Status code: {response.status_code}")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
+
 def send_balance_email(recipient_email: str, address: str, eth_amount: str):
     eth_value = float(ethtousd) * float(eth_amount)
     date = get_date()
